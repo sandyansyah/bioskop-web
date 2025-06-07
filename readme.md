@@ -21,7 +21,7 @@ pip (Python package manager)
 Langkah Instalasi
 
 Clone repositori
-bashgit clone https://github.com/username/bioskop-web.git
+bashgit clone https://github.com/sandyansyah/bioskop-web.git
 cd bioskop-web
 
 Buat virtual environment
