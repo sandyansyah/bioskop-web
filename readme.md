@@ -232,7 +232,7 @@ pip (Python package manager)
 Langkah-langkah Instalasi
 
 Clone repositori
-bashgit clone https://github.com/yourusername/cinema-booking.git
+bashgit clone https://github.com/sandyansyah/cinema-booking.git
 cd cinema-booking
 
 Buat virtual environment
