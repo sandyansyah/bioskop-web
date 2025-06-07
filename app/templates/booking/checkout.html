@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Konfirmasi Pemesanan</h5>
+            </div>
+            <div class="card-body">
+                <!-- Movie and Schedule Info -->
+                <div class="movie-info mb-4">
+                    <div class="d-flex">
+                        {% if schedule.movie.poster_image %}
+                        <div class="me-3">
+                            <img src="{{ url_for('static', filename='uploads/' + schedule.movie.poster_image) }}" alt="{{ schedule.movie.title }}" class="movie-thumbnail">
+                        </div>
+                        {% endif %}
+                        <div>
+                            <h4 class="mb-1">{{ schedule.movie.title }}</h4>
+                            <div class="text-muted mb-2">
+                                {{ schedule.formatted_date }} | {{ schedule.formatted_time }}
+                            </div>
+                            <div class="mb-2">
+                                <span class="badge bg-info">{{ schedule.room.theater.name }} - {{ schedule.room.name }}</span>
+                                {% if schedule.room.room_type %}
+                                <span class="badge bg-secondary">{{ schedule.room.room_type }}</span>
+                                {% endif %}
+                                <span class="badge bg-primary">{{ schedule.movie.duration }} min</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <!-- Selected Seats -->
+                <div class="mb-4">
+                    <h5 class="mb-3">Kursi yang Dipilih</h5>
+                    <div class="selected-seats-grid">
+                        {% for seat in selected_seats %}
+                        <div class="selected-seat-item">
+                            <i class="fas fa-chair me-2"></i>{{ seat.seat_label }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <!-- User Info -->
+                <div class="mb-4">
+                    <h5 class="mb-3">Informasi Pemesan</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <strong>Nama:</strong> {{ current_user.full_name or current_user.username }}
+                            </div>
+                            <div class="mb-2">
+                                <strong>Email:</strong> {{ current_user.email }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <strong>Nomor Telepon:</strong> {{ current_user.phone_number or 'Tidak ada' }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <!-- Terms and Conditions -->
+                <div class="mb-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="agreeTerms" required>
+                        <label class="form-check-label" for="agreeTerms">
+                            Saya telah membaca dan menyetujui <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">syarat dan ketentuan</a> yang berlaku.
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card mb-4 sticky-top" style="top: 20px; z-index: 999;">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Ringkasan Pembayaran</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Harga per kursi:</span>
+                        <span>Rp {{ "%.0f"|format(schedule.price) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>Jumlah kursi:</span>
+                        <span>{{ selected_seats|length }}</span>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Total:</h5>
+                    <h5 class="mb-0">Rp {{ "%.0f"|format(total_price) }}</h5>
+                </div>
+                
+                <form id="checkout-form" action="{{ url_for('booking.confirm') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="d-grid gap-2">
+                        <button type="submit" id="confirm-btn" class="btn btn-primary" disabled>
+                            Konfirmasi Pemesanan
+                        </button>
+                        <a href="{{ url_for('booking.select_seats', schedule_id=schedule.id) }}" class="btn btn-outline-secondary">
+                            Kembali ke Pemilihan Kursi
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Terms and Conditions Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Syarat dan Ketentuan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h6>1. Ketentuan Umum</h6>
+                <p>Tiket yang telah dibeli tidak dapat ditukar atau dikembalikan, kecuali dalam keadaan tertentu yang ditentukan oleh pihak bioskop.</p>
+                
+                <h6>2. Pemesanan Tiket</h6>
+                <p>Tiket hanya valid untuk film, tanggal, waktu, dan tempat duduk yang telah dipilih pada saat pembelian.</p>
+                
+                <h6>3. Pembayaran</h6>
+                <p>Pembayaran harus dilakukan dalam waktu 15 menit setelah pemesanan. Jika pembayaran tidak selesai dalam waktu tersebut, pemesanan akan otomatis dibatalkan.</p>
+                
+                <h6>4. E-Tiket</h6>
+                <p>E-Tiket akan dikirimkan ke email setelah pembayaran berhasil. E-Tiket harus ditunjukkan saat memasuki bioskop.</p>
+                
+                <h6>5. Pembatalan</h6>
+                <p>Pembatalan pemesanan hanya dapat dilakukan sebelum pembayaran. Setelah pembayaran berhasil, tiket tidak dapat dibatalkan.</p>
+                
+                <h6>6. Biaya Layanan</h6>
+                <p>Harga yang ditampilkan sudah termasuk biaya layanan dan pajak.</p>
+                
+                <h6>7. Kebijakan Bioskop</h6>
+                <p>Penonton wajib mematuhi semua peraturan bioskop. Pihak bioskop berhak menolak pengunjung yang tidak mematuhi peraturan.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Saya Mengerti</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .movie-thumbnail {
+        width: 80px;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 4px;
+    }
+    
+    .selected-seats-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .selected-seat-item {
+        background: #f8f9fa;
+        border-radius: 4px;
+        padding: 8px 12px;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const agreeTermsCheckbox = document.getElementById('agreeTerms');
+        const confirmBtn = document.getElementById('confirm-btn');
+        
+        // Enable/disable confirm button based on terms agreement
+        agreeTermsCheckbox.addEventListener('change', function() {
+            confirmBtn.disabled = !this.checked;
+        });
+        
+        // Form submission
+        document.getElementById('checkout-form').addEventListener('submit', function(e) {
+            if (!agreeTermsCheckbox.checked) {
+                e.preventDefault();
+                alert('Anda harus menyetujui syarat dan ketentuan untuk melanjutkan.');
+            }
+        });
+    });
+</script>
+{% endblock %}

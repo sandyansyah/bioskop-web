@@ -1,0 +1,228 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2">Kelola Bioskop</h1>
+    <a href="{{ url_for('admin.add_theater') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i>Tambah Bioskop
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Daftar Bioskop</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nama Bioskop</th>
+                        <th>Lokasi</th>
+                        <th>Jumlah Studio</th>
+                        <th>Jumlah Jadwal</th>
+                        <th style="width: 150px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for theater in theaters %}
+                    <tr>
+                        <td>{{ theater.id }}</td>
+                        <td>{{ theater.name }}</td>
+                        <td>{{ theater.location or '-' }}</td>
+                        <td>{{ theater.rooms.count() }}</td>
+                        <td>
+                            {% set schedule_count = namespace(value=0) %}
+                            {% for room in theater.rooms %}
+                                {% set schedule_count.value = schedule_count.value + room.schedules.count() %}
+                            {% endfor %}
+                            {{ schedule_count.value }}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('admin.edit_theater', theater_id=theater.id) }}" class="btn btn-warning" data-bs-toggle="tooltip" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#detailModal{{ theater.id }}" data-bs-toggle="tooltip" title="Detail">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ theater.id }}" data-bs-toggle="tooltip" title="Hapus">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+
+                            <!-- Detail Modal -->
+                            <div class="modal fade" id="detailModal{{ theater.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Detail Bioskop</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row mb-3">
+                                                <div class="col-md-4">
+                                                    <strong>Nama Bioskop:</strong>
+                                                </div>
+                                                <div class="col-md-8">
+                                                    {{ theater.name }}
+                                                </div>
+                                            </div>
+                                            <div class="row mb-3">
+                                                <div class="col-md-4">
+                                                    <strong>Lokasi:</strong>
+                                                </div>
+                                                <div class="col-md-8">
+                                                    {{ theater.location or '-' }}
+                                                </div>
+                                            </div>
+                                            <div class="row mb-3">
+                                                <div class="col-md-4">
+                                                    <strong>Deskripsi:</strong>
+                                                </div>
+                                                <div class="col-md-8">
+                                                    {{ theater.description or '-' }}
+                                                </div>
+                                            </div>
+                                            
+                                            <h6 class="mt-4 mb-3">Daftar Studio</h6>
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-bordered">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Nama Studio</th>
+                                                            <th>Tipe</th>
+                                                            <th>Kapasitas</th>
+                                                            <th>Status</th>
+                                                            <th>Aksi</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for room in theater.rooms %}
+                                                        <tr>
+                                                            <td>{{ room.name }}</td>
+                                                            <td>{{ room.room_type or '-' }}</td>
+                                                            <td>{{ room.capacity }}</td>
+                                                            <td>
+                                                                {% if room.is_active %}
+                                                                <span class="badge bg-success">Aktif</span>
+                                                                {% else %}
+                                                                <span class="badge bg-danger">Tidak Aktif</span>
+                                                                {% endif %}
+                                                            </td>
+                                                            <td>
+                                                                <a href="{{ url_for('admin.edit_room', room_id=room.id) }}" class="btn btn-sm btn-warning">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </a>
+                                                                <a href="{{ url_for('admin.manage_seats', room_id=room.id) }}" class="btn btn-sm btn-primary">
+                                                                    <i class="fas fa-chair"></i>
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                        {% else %}
+                                                        <tr>
+                                                            <td colspan="5" class="text-center">Belum ada studio untuk bioskop ini.</td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                                            <a href="{{ url_for('admin.add_room') }}?theater_id={{ theater.id }}" class="btn btn-primary">
+                                                <i class="fas fa-plus me-1"></i>Tambah Studio
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Delete Modal -->
+                            <div class="modal fade" id="deleteModal{{ theater.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Hapus Bioskop</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>Anda yakin ingin menghapus bioskop <strong>{{ theater.name }}</strong>?</p>
+                                            <div class="alert alert-danger">
+                                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                                <strong>Perhatian:</strong> Menghapus bioskop akan menghapus semua studio, jadwal, dan pemesanan terkait bioskop ini.
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                            <form action="{{ url_for('admin.delete_theater', theater_id=theater.id) }}" method="POST" style="display: inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-danger">Hapus</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center">Belum ada bioskop yang ditambahkan.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Theater Form -->
+<div class="modal fade" id="theaterFormModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="theaterModalTitle">Tambah Bioskop Baru</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="theaterForm" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Nama Bioskop</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="location" class="form-label">Lokasi</label>
+                        <input type="text" class="form-control" id="location" name="location">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Deskripsi</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    });
+</script>
+{% endblock %}

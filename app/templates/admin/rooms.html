@@ -1,0 +1,198 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2">Kelola Studio</h1>
+    <a href="{{ url_for('admin.add_room') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i>Tambah Studio
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-md-8">
+                <h5 class="mb-0">Daftar Studio</h5>
+            </div>
+            <div class="col-md-4">
+                <form action="{{ url_for('admin.rooms') }}" method="GET" class="d-flex">
+                    <select name="theater" class="form-select form-select-sm me-2">
+                        <option value="">Semua Bioskop</option>
+                        {% for theater in theaters %}
+                        <option value="{{ theater.id }}" {% if request.args.get('theater')|int == theater.id %}selected{% endif %}>
+                            {{ theater.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="fas fa-filter"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nama Studio</th>
+                        <th>Bioskop</th>
+                        <th>Tipe</th>
+                        <th>Kapasitas</th>
+                        <th>Jumlah Kursi</th>
+                        <th>Status</th>
+                        <th style="width: 200px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for room in rooms %}
+                    <tr>
+                        <td>{{ room.id }}</td>
+                        <td>{{ room.name }}</td>
+                        <td>{{ room.theater.name }}</td>
+                        <td>{{ room.room_type or '-' }}</td>
+                        <td>{{ room.capacity }}</td>
+                        <td>{{ room.seats.count() }}</td>
+                        <td>
+                            {% if room.is_active %}
+                            <span class="badge bg-success">Aktif</span>
+                            {% else %}
+                            <span class="badge bg-danger">Tidak Aktif</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('admin.edit_room', room_id=room.id) }}" class="btn btn-warning" data-bs-toggle="tooltip" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{{ url_for('admin.manage_seats', room_id=room.id) }}" class="btn btn-primary" data-bs-toggle="tooltip" title="Kelola Kursi">
+                                    <i class="fas fa-chair"></i>
+                                </a>
+                                <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#scheduleModal{{ room.id }}" data-bs-toggle="tooltip" title="Jadwal">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </button>
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ room.id }}" data-bs-toggle="tooltip" title="Hapus">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+
+                            <!-- Schedules Modal -->
+                            <div class="modal fade" id="scheduleModal{{ room.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Jadwal - {{ room.theater.name }} ({{ room.name }})</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-bordered">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Film</th>
+                                                            <th>Tanggal</th>
+                                                            <th>Waktu</th>
+                                                            <th>Harga</th>
+                                                            <th>Status</th>
+                                                            <th>Aksi</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for schedule in room.schedules %}
+                                                        <tr>
+                                                            <td>{{ schedule.movie.title }}</td>
+                                                            <td>{{ schedule.start_time.strftime('%d/%m/%Y') }}</td>
+                                                            <td>{{ schedule.start_time.strftime('%H:%M') }}</td>
+                                                            <td>Rp {{ "%.0f"|format(schedule.price) }}</td>
+                                                            <td>
+                                                                {% if schedule.is_active %}
+                                                                <span class="badge bg-success">Aktif</span>
+                                                                {% else %}
+                                                                <span class="badge bg-danger">Tidak Aktif</span>
+                                                                {% endif %}
+                                                            </td>
+                                                            <td>
+                                                                <a href="{{ url_for('admin.edit_schedule', schedule_id=schedule.id) }}" class="btn btn-sm btn-warning">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                        {% else %}
+                                                        <tr>
+                                                            <td colspan="6" class="text-center">Belum ada jadwal untuk studio ini.</td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                                            <a href="{{ url_for('admin.add_schedule') }}?room_id={{ room.id }}" class="btn btn-primary">
+                                                <i class="fas fa-plus me-1"></i>Tambah Jadwal
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Delete Modal -->
+                            <div class="modal fade" id="deleteModal{{ room.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Hapus Studio</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>Anda yakin ingin menghapus studio <strong>{{ room.name }}</strong> dari bioskop <strong>{{ room.theater.name }}</strong>?</p>
+                                            <div class="alert alert-danger">
+                                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                                <strong>Perhatian:</strong> Menghapus studio akan menghapus semua kursi, jadwal, dan pemesanan terkait studio ini.
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                            <form action="{{ url_for('admin.delete_room', room_id=room.id) }}" method="POST" style="display: inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-danger">Hapus</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center">Belum ada studio yang ditambahkan.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .badge {
+        font-size: 0.75rem;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Tiket Saya</h1>
+    
+    {% if bookings %}
+        <div class="row">
+            {% for booking in bookings %}
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ booking.booking_code }}</h5>
+                        <span class="badge 
+                            {% if booking.status == 'pending' %}bg-warning
+                            {% elif booking.status == 'paid' %}bg-success
+                            {% elif booking.status == 'cancelled' %}bg-danger
+                            {% elif booking.status == 'completed' %}bg-info
+                            {% else %}bg-secondary{% endif %}">
+                            {{ booking.status|title }}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <h5>{{ booking.schedule.movie.title }}</h5>
+                            <div class="text-muted">
+                                {{ booking.schedule.formatted_date }} | {{ booking.schedule.formatted_time }}
+                            </div>
+                            <div class="mt-2">
+                                <span class="badge bg-info">{{ booking.schedule.room.theater.name }} - {{ booking.schedule.room.name }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Kursi:</strong> 
+                            {% set seats = booking.get_seat_labels() %}
+                            {% for seat in seats %}
+                                <span class="badge bg-secondary">{{ seat }}</span>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Total:</strong> 
+                                <span class="text-primary">Rp {{ "%.0f"|format(booking.total_price) }}</span>
+                            </div>
+                            <div>
+                                <strong>Tanggal Pesan:</strong>
+                                <span>{{ booking.booking_date.strftime('%d/%m/%Y %H:%M') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer d-flex justify-content-between">
+                        <a href="{{ url_for('booking.view_booking', booking_id=booking.id) }}" class="btn btn-primary">
+                            <i class="fas fa-eye me-1"></i>Lihat Detail
+                        </a>
+                        
+                        {% if booking.status == 'pending' %}
+                        <form action="{{ url_for('booking.cancel_booking', booking_id=booking.id) }}" method="POST" onsubmit="return confirm('Anda yakin ingin membatalkan pemesanan ini?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-times me-1"></i>Batalkan
+                            </button>
+                        </form>
+                        {% elif booking.status == 'paid' %}
+                        <a href="{{ url_for('booking.view_booking', booking_id=booking.id) }}" class="btn btn-success">
+                            <i class="fas fa-ticket-alt me-1"></i>Cetak Tiket
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>Anda belum memiliki tiket. <a href="{{ url_for('movies.list') }}" class="alert-link">Lihat film yang sedang tayang</a> dan pesan tiket sekarang!
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .badge {
+        font-size: 0.8rem;
+    }
+    
+    .card {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}

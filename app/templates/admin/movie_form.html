@@ -1,0 +1,192 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2">{{ title }}</h1>
+    <a href="{{ url_for('admin.movies') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Kembali
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+            
+            <div class="row">
+                <!-- Kolom Kiri -->
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        {{ form.title.label(class="form-label") }}
+                        {% if form.title.errors %}
+                            {{ form.title(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.title.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.title(class="form-control") }}
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {% if form.description.errors %}
+                            {{ form.description(class="form-control is-invalid", rows=5) }}
+                            <div class="invalid-feedback">
+                                {% for error in form.description.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.description(class="form-control", rows=5) }}
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.duration.label(class="form-label") }}
+                                {% if form.duration.errors %}
+                                    {{ form.duration(class="form-control is-invalid") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.duration.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {{ form.duration(class="form-control") }}
+                                    <div class="form-text">Dalam menit</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.release_date.label(class="form-label") }}
+                                {% if form.release_date.errors %}
+                                    {{ form.release_date(class="form-control is-invalid", type="date") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.release_date.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {{ form.release_date(class="form-control", type="date") }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.trailer_url.label(class="form-label") }}
+                        {% if form.trailer_url.errors %}
+                            {{ form.trailer_url(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.trailer_url.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.trailer_url(class="form-control", placeholder="https://www.youtube.com/watch?v=...") }}
+                            <div class="form-text">URL YouTube trailer film</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Kolom Kanan -->
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        {{ form.director.label(class="form-label") }}
+                        {% if form.director.errors %}
+                            {{ form.director(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.director.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.director(class="form-control") }}
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.cast.label(class="form-label") }}
+                        {% if form.cast.errors %}
+                            {{ form.cast(class="form-control is-invalid", rows=3) }}
+                            <div class="invalid-feedback">
+                                {% for error in form.cast.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.cast(class="form-control", rows=3) }}
+                            <div class="form-text">Nama pemeran utama, pisahkan dengan koma</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.rating.label(class="form-label") }}
+                        {% if form.rating.errors %}
+                            {{ form.rating(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.rating.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.rating(class="form-control", placeholder="G, PG, PG-13, R, etc.") }}
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.genres.label(class="form-label") }}
+                        {% if form.genres.errors %}
+                            {{ form.genres(class="form-select is-invalid", multiple=true, size=5) }}
+                            <div class="invalid-feedback">
+                                {% for error in form.genres.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.genres(class="form-select", multiple=true, size=5) }}
+                            <div class="form-text">Tahan Ctrl untuk memilih beberapa genre</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.poster_image.label(class="form-label") }}
+                        {% if form.poster_image.errors %}
+                            {{ form.poster_image(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.poster_image.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.poster_image(class="form-control") }}
+                            <div class="form-text">Format: JPG, PNG, GIF (max 2MB)</div>
+                        {% endif %}
+                        
+                        {% if movie and movie.poster_image %}
+                            <div class="mt-2">
+                                <img src="{{ url_for('static', filename='uploads/' + movie.poster_image) }}" alt="{{ movie.title }}" class="img-thumbnail" style="max-height: 150px;">
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-check mb-3">
+                        {{ form.is_showing(class="form-check-input") }}
+                        {{ form.is_showing.label(class="form-check-label") }}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-end mt-3">
+                <a href="{{ url_for('admin.movies') }}" class="btn btn-secondary me-2">Batal</a>
+                {{ form.submit(class="btn btn-primary") }}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

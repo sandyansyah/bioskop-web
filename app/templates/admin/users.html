@@ -1,0 +1,193 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2">Kelola Pengguna</h1>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-md-8">
+                <h5 class="mb-0">Daftar Pengguna</h5>
+            </div>
+            <div class="col-md-4">
+                <form action="{{ url_for('admin.users') }}" method="GET" class="d-flex">
+                    <input type="text" name="search" class="form-control form-control-sm me-2" placeholder="Cari username/email..." value="{{ request.args.get('search', '') }}">
+                    <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Nama Lengkap</th>
+                        <th>Telepon</th>
+                        <th>Tanggal Daftar</th>
+                        <th>Role</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.full_name or '-' }}</td>
+                        <td>{{ user.phone_number or '-' }}</td>
+                        <td>{{ user.created_at.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            {% if user.is_admin %}
+                            <span class="badge bg-danger">Admin</span>
+                            {% else %}
+                            <span class="badge bg-info">User</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#viewModal{{ user.id }}" data-bs-toggle="tooltip" title="Lihat Detail">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                {% if user.id != current_user.id %}
+                                <button type="button" class="btn {% if user.is_admin %}btn-warning{% else %}btn-success{% endif %}" data-bs-toggle="modal" data-bs-target="#toggleAdminModal{{ user.id }}" data-bs-toggle="tooltip" title="{% if user.is_admin %}Hapus Admin{% else %}Jadikan Admin{% endif %}">
+                                    <i class="fas {% if user.is_admin %}fa-user-minus{% else %}fa-user-shield{% endif %}"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+
+                            <!-- View Modal -->
+                            <div class="modal fade" id="viewModal{{ user.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Detail Pengguna</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row mb-3">
+                                                <div class="col-md-4">
+                                                    <strong>Username:</strong>
+                                                </div>
+                                                <div class="col-md-8">
+                                                    {{ user.username }}
+                                                </div>
+                                            </div>
+                                            <div class="row mb-3">
+                                                <div class="col-md-4">
+                                                    <strong>Email:</strong>
+                                                </div>
+                                                <div class="col-md-8">
+                                                    {{ user.email }}
+                                                </div>
+                                            </div>
+                                            <div class="row mb-3">
+                                                <div class="col-md-4">
+                                                    <strong>Nama Lengkap:</strong>
+                                                </div>
+                                                <div class="col-md-8">
+                                                    {{ user.full_name or '-' }}
+                                                </div>
+                                            </div>
+                                            <div class="row mb-3">
+                                                <div class="col-md-4">
+                                                    <strong>Telepon:</strong>
+                                                </div>
+                                                <div class="col-md-8">
+                                                    {{ user.phone_number or '-' }}
+                                                </div>
+                                            </div>
+                                            <div class="row mb-3">
+                                                <div class="col-md-4">
+                                                    <strong>Tanggal Daftar:</strong>
+                                                </div>
+                                                <div class="col-md-8">
+                                                    {{ user.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                                </div>
+                                            </div>
+                                            <div class="row mb-3">
+                                                <div class="col-md-4">
+                                                    <strong>Role:</strong>
+                                                </div>
+                                                <div class="col-md-8">
+                                                    {% if user.is_admin %}
+                                                    <span class="badge bg-danger">Admin</span>
+                                                    {% else %}
+                                                    <span class="badge bg-info">User</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Toggle Admin Modal -->
+                            {% if user.id != current_user.id %}
+                            <div class="modal fade" id="toggleAdminModal{{ user.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">{% if user.is_admin %}Hapus Status Admin{% else %}Jadikan Admin{% endif %}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            {% if user.is_admin %}
+                                            <p>Anda yakin ingin menghapus status admin dari <strong>{{ user.username }}</strong>?</p>
+                                            {% else %}
+                                            <p>Anda yakin ingin menjadikan <strong>{{ user.username }}</strong> sebagai admin?</p>
+                                            <div class="alert alert-warning">
+                                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                                <strong>Perhatian:</strong> Admin memiliki akses penuh ke seluruh sistem termasuk mengelola film, bioskop, jadwal, dan pengguna lain.
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                            <form action="{{ url_for('admin.toggle_admin', user_id=user.id) }}" method="POST" style="display: inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn {% if user.is_admin %}btn-warning{% else %}btn-success{% endif %}">
+                                                    {% if user.is_admin %}Hapus Status Admin{% else %}Jadikan Admin{% endif %}
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center">Tidak ada data pengguna.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    });
+</script>
+{% endblock %}

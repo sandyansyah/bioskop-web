@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Pembayaran</h5>
+            </div>
+            <div class="card-body">
+                <!-- Booking Info -->
+                <div class="booking-info mb-4">
+                    <h5 class="mb-3">Informasi Pemesanan</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <strong>Kode Pemesanan:</strong> {{ booking.booking_code }}
+                            </div>
+                            <div class="mb-2">
+                                <strong>Film:</strong> {{ booking.schedule.movie.title }}
+                            </div>
+                            <div class="mb-2">
+                                <strong>Tanggal/Waktu:</strong> {{ booking.schedule.formatted_date }} | {{ booking.schedule.formatted_time }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <strong>Bioskop:</strong> {{ booking.schedule.room.theater.name }}
+                            </div>
+                            <div class="mb-2">
+                                <strong>Studio:</strong> {{ booking.schedule.room.name }}
+                            </div>
+                            <div class="mb-2">
+                                <strong>Kursi:</strong> {{ booking.get_seat_labels()|join(', ') }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info mt-2">
+                        <i class="fas fa-info-circle me-2"></i>Selesaikan pembayaran dalam waktu 15 menit. Pesanan yang tidak dibayar akan otomatis dibatalkan.
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <!-- Payment Form -->
+                <div class="payment-form">
+                    <h5 class="mb-3">Metode Pembayaran</h5>
+                    
+                    <form method="POST" action="{{ url_for('payment.submit', booking_id=booking.id) }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            <div class="payment-method-selector">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-check payment-method-option">
+                                            <input class="form-check-input" type="radio" name="payment_method" id="credit_card" value="credit_card" checked>
+                                            <label class="form-check-label" for="credit_card">
+                                                <i class="far fa-credit-card me-2"></i>Kartu Kredit/Debit
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check payment-method-option">
+                                            <input class="form-check-input" type="radio" name="payment_method" id="bank_transfer" value="bank_transfer">
+                                            <label class="form-check-label" for="bank_transfer">
+                                                <i class="fas fa-university me-2"></i>Transfer Bank
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check payment-method-option">
+                                            <input class="form-check-input" type="radio" name="payment_method" id="e_wallet" value="e_wallet">
+                                            <label class="form-check-label" for="e_wallet">
+                                                <i class="fas fa-wallet me-2"></i>E-Wallet
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Credit Card Form -->
+                        <div id="credit_card_form" class="payment-method-form">
+                            <div class="mb-3">
+                                {{ form.card_number.label(class="form-label") }}
+                                {{ form.card_number(class="form-control", placeholder="1234 5678 9012 3456") }}
+                                <div class="form-text">{{ form.card_number.description }}</div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.card_holder.label(class="form-label") }}
+                                        {{ form.card_holder(class="form-control", placeholder="NAMA DI KARTU") }}
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        {{ form.expiry_date.label(class="form-label") }}
+                                        {{ form.expiry_date(class="form-control", placeholder="MM/YY") }}
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        {{ form.cvv.label(class="form-label") }}
+                                        {{ form.cvv(class="form-control", placeholder="123") }}
+                                        <div class="form-text">{{ form.cvv.description }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="accepted-cards mb-3">
+                                <small class="text-muted">Kartu yang diterima:</small>
+                                <div class="mt-1">
+                                    <i class="fab fa-cc-visa fa-2x me-2"></i>
+                                    <i class="fab fa-cc-mastercard fa-2x me-2"></i>
+                                    <i class="fab fa-cc-amex fa-2x me-2"></i>
+                                    <i class="fab fa-cc-jcb fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Bank Transfer Form -->
+                        <div id="bank_transfer_form" class="payment-method-form d-none">
+                            <div class="mb-3">
+                                {{ form.bank_name.label(class="form-label") }}
+                                {{ form.bank_name(class="form-select") }}
+                                <div class="form-text">{{ form.bank_name.description }}</div>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>Instruksi Transfer</h6>
+                                <p class="mb-0">
+                                    Setelah memilih bank, Anda akan diarahkan ke halaman konfirmasi dengan nomor rekening tujuan dan instruksi pembayaran lengkap.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- E-Wallet Form -->
+                        <div id="e_wallet_form" class="payment-method-form d-none">
+                            <div class="mb-3">
+                                {{ form.wallet_type.label(class="form-label") }}
+                                {{ form.wallet_type(class="form-select") }}
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ form.phone_number.label(class="form-label") }}
+                                {{ form.phone_number(class="form-control", placeholder="08123456789") }}
+                                <div class="form-text">{{ form.phone_number.description }}</div>
+                            </div>
+                            
+                            <div class="e-wallets mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="wallet-logo p-2 border rounded">
+                                        <img src="{{ url_for('static', filename='images/gopay.png') }}" alt="GoPay" height="40">
+                                    </div>
+                                    <div class="wallet-logo p-2 border rounded">
+                                        <img src="{{ url_for('static', filename='images/ovo.png') }}" alt="OVO" height="40">
+                                    </div>
+                                    <div class="wallet-logo p-2 border rounded">
+                                        <img src="{{ url_for('static', filename='images/dana.png') }}" alt="DANA" height="40">
+                                    </div>
+                                    <div class="wallet-logo p-2 border rounded">
+                                        <img src="{{ url_for('static', filename='images/linkaja.png') }}" alt="LinkAja" height="40">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <a href="{{ url_for('payment.cancel', booking_id=booking.id) }}" class="btn btn-outline-danger" onclick="return confirm('Anda yakin ingin membatalkan pemesanan?')">
+                                    Batalkan Pemesanan
+                                </a>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <div class="mb-2">
+                                    <strong>Total Pembayaran:</strong>
+                                    <span class="fs-4 ms-2 text-primary">Rp {{ "%.0f"|format(booking.total_price) }}</span>
+                                </div>
+                                {{ form.submit(class="btn btn-primary btn-lg") }}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .payment-method-option {
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 10px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .payment-method-option:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .payment-method-option .form-check-input {
+        margin-top: 0.3em;
+    }
+    
+    .form-check-input:checked + .form-check-label {
+        font-weight: bold;
+        color: #007bff;
+    }
+    
+    .payment-method-option input:checked ~ label {
+        font-weight: bold;
+    }
+    
+    .payment-method-form {
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+        margin-bottom: 20px;
+    }
+    
+    .wallet-logo {
+        background-color: white;
+        transition: transform 0.2s;
+    }
+    
+    .wallet-logo:hover {
+        transform: scale(1.05);
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle payment method selection
+        const paymentMethods = document.querySelectorAll('input[name="payment_method"]');
+        const creditCardForm = document.getElementById('credit_card_form');
+        const bankTransferForm = document.getElementById('bank_transfer_form');
+        const eWalletForm = document.getElementById('e_wallet_form');
+        
+        // Update hidden field in form
+        const paymentMethodField = document.querySelector('input[name="payment_method"]');
+        
+        paymentMethods.forEach(method => {
+            method.addEventListener('change', function() {
+                // Hide all forms
+                creditCardForm.classList.add('d-none');
+                bankTransferForm.classList.add('d-none');
+                eWalletForm.classList.add('d-none');
+                
+                // Show the selected form
+                const selectedValue = this.value;
+                paymentMethodField.value = selectedValue;
+                
+                if (selectedValue === 'credit_card') {
+                    creditCardForm.classList.remove('d-none');
+                } else if (selectedValue === 'bank_transfer') {
+                    bankTransferForm.classList.remove('d-none');
+                } else if (selectedValue === 'e_wallet') {
+                    eWalletForm.classList.remove('d-none');
+                }
+            });
+        });
+        
+        // Format credit card number input
+        const cardNumberInput = document.getElementById('card_number');
+        if (cardNumberInput) {
+            cardNumberInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 16) {
+                    value = value.slice(0, 16);
+                }
+                e.target.value = value;
+            });
+        }
+        
+        // Format expiry date input
+        const expiryDateInput = document.getElementById('expiry_date');
+        if (expiryDateInput) {
+            expiryDateInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 0) {
+                    if (value.length <= 2) {
+                        value = value;
+                    } else {
+                        value = value.slice(0, 2) + '/' + value.slice(2, 4);
+                    }
+                }
+                e.target.value = value;
+            });
+        }
+        
+        // Format CVV input
+        const cvvInput = document.getElementById('cvv');
+        if (cvvInput) {
+            cvvInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 3) {
+                    value = value.slice(0, 3);
+                }
+                e.target.value = value;
+            });
+        }
+    });
+</script>
+{% endblock %}

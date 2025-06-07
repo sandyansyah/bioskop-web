@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="movie-detail-container">
+    <div class="row">
+        <!-- Movie Poster and Info -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                {% if movie.poster_image %}
+                <img src="{{ url_for('static', filename='uploads/' + movie.poster_image) }}" class="card-img-top" alt="{{ movie.title }}">
+                {% else %}
+                <div class="card-img-top placeholder-poster d-flex align-items-center justify-content-center bg-light">
+                    <i class="fas fa-film fa-3x text-secondary"></i>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">{{ movie.title }}</h5>
+                        {% if movie.rating %}
+                        <span class="badge bg-warning text-dark">{{ movie.rating }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="movie-meta mb-3">
+                        <div><strong>Durasi:</strong> {{ movie.duration }} menit</div>
+                        {% if movie.release_date %}
+                        <div><strong>Tanggal Rilis:</strong> {{ movie.release_date.strftime('%d %B %Y') }}</div>
+                        {% endif %}
+                        {% if movie.director %}
+                        <div><strong>Sutradara:</strong> {{ movie.director }}</div>
+                        {% endif %}
+                        {% if movie.get_genres_str() %}
+                        <div><strong>Genre:</strong> {{ movie.get_genres_str() }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if movie.trailer_url %}
+                    <a href="{{ movie.trailer_url }}" target="_blank" class="btn btn-outline-danger w-100 mb-2">
+                        <i class="fab fa-youtube me-1"></i>Tonton Trailer
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Movie Description and Schedule -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Sinopsis</h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ movie.description or 'Belum ada deskripsi tersedia untuk film ini.' }}</p>
+                    
+                    {% if movie.cast %}
+                    <div class="mt-4">
+                        <h6>Pemeran:</h6>
+                        <p>{{ movie.cast }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Show Schedules -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Jadwal Tayang</h5>
+                </div>
+                <div class="card-body">
+                    {% if sorted_dates %}
+                        <ul class="nav nav-pills mb-3" id="dateTab" role="tablist">
+                            {% for date_str in sorted_dates %}
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link {% if loop.first %}active{% endif %}" 
+                                            id="date-{{ date_str }}-tab" 
+                                            data-bs-toggle="pill" 
+                                            data-bs-target="#date-{{ date_str }}" 
+                                            type="button" 
+                                            role="tab">
+                                        {{ schedules_by_date[date_str]['formatted_date'] }}
+                                    </button>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        
+                        <div class="tab-content" id="dateTabContent">
+                            {% for date_str in sorted_dates %}
+                                <div class="tab-pane fade {% if loop.first %}show active{% endif %}" 
+                                     id="date-{{ date_str }}" 
+                                     role="tabpanel">
+                                    
+                                    {% for theater_id, theater_data in schedules_by_date[date_str]['schedules_by_theater'].items() %}
+                                        <div class="theater-container mb-4">
+                                            <h5 class="theater-name mb-3">
+                                                <i class="fas fa-building me-2"></i>{{ theater_data['theater'].name }}
+                                            </h5>
+                                            
+                                            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-2">
+                                                {% for schedule in theater_data['schedules'] %}
+                                                    <div class="col">
+                                                        <div class="schedule-card">
+                                                            <div class="time-badge">
+                                                                {{ schedule.formatted_time }}
+                                                            </div>
+                                                            <div class="schedule-info">
+                                                                <div class="mb-1">
+                                                                    <span class="room-name">{{ schedule.room.name }}</span>
+                                                                    {% if schedule.room.room_type %}
+                                                                    <span class="room-type badge bg-info">{{ schedule.room.room_type }}</span>
+                                                                    {% endif %}
+                                                                </div>
+                                                                <div class="price">Rp {{ "%.0f"|format(schedule.price) }}</div>
+                                                                <div class="seats mt-1">
+                                                                    <small>
+                                                                        <i class="fas fa-chair me-1"></i>
+                                                                        {{ schedule.get_available_seats_count() }} kursi tersedia
+                                                                    </small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="book-btn">
+                                                                {% if schedule.is_sold_out() %}
+                                                                    <button class="btn btn-sm btn-outline-secondary" disabled>Habis</button>
+                                                                {% else %}
+                                                                    <a href="{{ url_for('booking.select_seats', schedule_id=schedule.id) }}" class="btn btn-sm btn-primary">
+                                                                        Pilih Kursi
+                                                                    </a>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            Tidak ada jadwal tayang untuk film ini dalam 7 hari ke depan.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .placeholder-poster {
+        height: 400px;
+    }
+    
+    .card-img-top {
+        height: 400px;
+        object-fit: cover;
+    }
+    
+    .schedule-card {
+        display: flex;
+        flex-direction: column;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+        height: 100%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .schedule-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .time-badge {
+        background-color: #f8f9fa;
+        padding: 8px 12px;
+        font-weight: bold;
+        border-bottom: 1px solid #ddd;
+        text-align: center;
+    }
+    
+    .schedule-info {
+        padding: 10px;
+        flex-grow: 1;
+    }
+    
+    .room-name {
+        font-weight: 500;
+    }
+    
+    .room-type {
+        font-size: 0.7rem;
+    }
+    
+    .price {
+        font-weight: bold;
+        color: #dc3545;
+    }
+    
+    .seats {
+        color: #6c757d;
+    }
+    
+    .book-btn {
+        padding: 10px;
+        text-align: center;
+        background-color: #f8f9fa;
+        border-top: 1px solid #ddd;
+    }
+    
+    .theater-name {
+        padding-bottom: 8px;
+        border-bottom: 1px solid #ddd;
+    }
+</style>
+{% endblock %}

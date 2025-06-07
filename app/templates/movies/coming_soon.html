@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Film Yang Akan Datang</h1>
+    
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for movie in movies.items %}
+        <div class="col animate-on-scroll" data-animation="slide-up">
+            <div class="card movie-card h-100">
+                {% if movie.poster_image %}
+                <img src="{{ url_for('static', filename='uploads/' + movie.poster_image) }}" class="card-img-top" alt="{{ movie.title }}">
+                {% else %}
+                <div class="card-img-top placeholder-poster d-flex align-items-center justify-content-center bg-light">
+                    <i class="fas fa-film fa-3x text-secondary"></i>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ movie.title }}</h5>
+                    <div class="mb-2">
+                        <span class="badge bg-primary">{{ movie.duration }} min</span>
+                        {% if movie.rating %}
+                        <span class="badge bg-warning text-dark">{{ movie.rating }}</span>
+                        {% endif %}
+                    </div>
+                    <p class="card-text small text-muted">{{ movie.get_genres_str() }}</p>
+                    {% if movie.release_date %}
+                    <p class="card-text"><small class="text-muted">Rilis: {{ movie.release_date.strftime('%d %b %Y') }}</small></p>
+                    {% endif %}
+                    <a href="{{ url_for('movies.detail', movie_id=movie.id) }}" class="btn btn-primary mt-2">Lihat Detail</a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>Tidak ada film yang akan datang saat ini.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if movies.pages > 1 %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if movies.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('movies.coming_soon', page=movies.prev_num) }}">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link"><i class="fas fa-chevron-left"></i></span>
+            </li>
+            {% endif %}
+            
+            {% for page_num in movies.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if page_num %}
+                    {% if page_num == movies.page %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_num }}</span>
+                    </li>
+                    {% else %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('movies.coming_soon', page=page_num) }}">
+                            {{ page_num }}
+                        </a>
+                    </li>
+                    {% endif %}
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if movies.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('movies.coming_soon', page=movies.next_num) }}">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link"><i class="fas fa-chevron-right"></i></span>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .placeholder-poster {
+        height: 300px;
+    }
+    
+    .movie-card {
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    
+    .movie-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .movie-card .card-img-top {
+        height: 300px;
+        object-fit: cover;
+        transition: transform 0.5s;
+    }
+    
+    .movie-card:hover .card-img-top {
+        transform: scale(1.05);
+    }
+</style>
+{% endblock %}

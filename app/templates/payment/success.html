@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card success-card">
+            <div class="card-body text-center">
+                <div class="success-icon mb-4">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h2 class="mb-3">Pembayaran Berhasil!</h2>
+                <p class="lead mb-4">
+                    Terima kasih atas pembelian tiket Anda. Detail tiket telah dikirim ke email Anda.
+                </p>
+                
+                <div class="ticket-container">
+                    <div class="ticket">
+                        <div class="ticket-header">
+                            <div class="ticket-logo">
+                                <i class="fas fa-film me-2"></i>CinemaTicket
+                            </div>
+                            <div class="ticket-label">E-TICKET</div>
+                        </div>
+                        <div class="ticket-body">
+                            <div class="ticket-movie-title">
+                                {{ booking.schedule.movie.title }}
+                            </div>
+                            
+                            <div class="ticket-info-container">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="ticket-info-item">
+                                            <div class="label">Kode Booking:</div>
+                                            <div class="value">{{ booking.booking_code }}</div>
+                                        </div>
+                                        <div class="ticket-info-item">
+                                            <div class="label">Bioskop:</div>
+                                            <div class="value">{{ booking.schedule.room.theater.name }}</div>
+                                        </div>
+                                        <div class="ticket-info-item">
+                                            <div class="label">Studio:</div>
+                                            <div class="value">{{ booking.schedule.room.name }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="ticket-info-item">
+                                            <div class="label">Tanggal:</div>
+                                            <div class="value">{{ booking.schedule.formatted_date }}</div>
+                                        </div>
+                                        <div class="ticket-info-item">
+                                            <div class="label">Jam:</div>
+                                            <div class="value">{{ booking.schedule.formatted_time }}</div>
+                                        </div>
+                                        <div class="ticket-info-item">
+                                            <div class="label">Kursi:</div>
+                                            <div class="value">{{ booking.get_seat_labels()|join(', ') }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="ticket-footer">
+                                <div class="qr-code">
+                                    <i class="fas fa-qrcode fa-5x"></i>
+                                </div>
+                                <div class="ticket-note">
+                                    Tunjukkan tiket ini saat memasuki bioskop. Tiket hanya valid untuk film, tanggal, waktu, dan kursi yang ditunjukkan di atas.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="payment-details mt-4">
+                    <h5>Detail Pembayaran</h5>
+                    <table class="table table-bordered">
+                        <tbody>
+                            <tr>
+                                <th scope="row">ID Transaksi</th>
+                                <td>{{ payment.transaction_id }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Metode Pembayaran</th>
+                                <td>
+                                    {% if payment.payment_method == 'credit_card' %}
+                                        Kartu Kredit/Debit
+                                    {% elif payment.payment_method == 'bank_transfer' %}
+                                        Transfer Bank
+                                    {% elif payment.payment_method == 'e_wallet' %}
+                                        E-Wallet
+                                    {% else %}
+                                        {{ payment.payment_method }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Tanggal Pembayaran</th>
+                                <td>{{ payment.payment_date.strftime('%d %B %Y, %H:%M') }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Total Pembayaran</th>
+                                <td>Rp {{ "%.0f"|format(payment.amount) }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Status</th>
+                                <td><span class="badge bg-success">Berhasil</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-4">
+                    <a href="{{ url_for('booking.view_booking', booking_id=booking.id) }}" class="btn btn-primary me-2">
+                        <i class="fas fa-ticket-alt me-1"></i>Lihat Tiket
+                    </a>
+                    <a href="{{ url_for('movies.list') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-film me-1"></i>Lihat Film Lainnya
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .success-card {
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+        border: none;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .success-icon {
+        font-size: 5rem;
+        color: #28a745;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+    
+    .ticket-container {
+        max-width: 600px;
+        margin: 2rem auto;
+    }
+    
+    .ticket {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
+    }
+    
+    .ticket-header {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .ticket-logo {
+        font-weight: bold;
+        font-size: 1.2rem;
+    }
+    
+    .ticket-label {
+        font-weight: bold;
+        background-color: rgba(255, 255, 255, 0.2);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+    }
+    
+    .ticket-body {
+        padding: 20px;
+    }
+    
+    .ticket-movie-title {
+        font-size: 1.4rem;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px dashed #ddd;
+    }
+    
+    .ticket-info-container {
+        padding: 0 10px;
+    }
+    
+    .ticket-info-item {
+        margin-bottom: 12px;
+    }
+    
+    .ticket-info-item .label {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+    
+    .ticket-info-item .value {
+        font-weight: bold;
+        font-size: 1.1rem;
+    }
+    
+    .ticket-footer {
+        display: flex;
+        align-items: center;
+        border-top: 1px dashed #ddd;
+        padding-top: 20px;
+        margin-top: 20px;
+    }
+    
+    .qr-code {
+        margin-right: 20px;
+    }
+    
+    .ticket-note {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    
+    .payment-details {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .payment-details h5 {
+        margin-bottom: 1rem;
+    }
+    
+    @media print {
+        .navbar, .footer, .btn {
+            display: none !important;
+        }
+        
+        .card {
+            box-shadow: none !important;
+            border: none !important;
+        }
+        
+        .ticket {
+            box-shadow: none !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add print functionality
+        const printBtn = document.createElement('button');
+        printBtn.classList.add('btn', 'btn-outline-secondary', 'mt-3');
+        printBtn.innerHTML = '<i class="fas fa-print me-1"></i>Cetak Tiket';
+        printBtn.addEventListener('click', function() {
+            window.print();
+        });
+        
+        document.querySelector('.mt-4').appendChild(printBtn);
+    });
+</script>
+{% endblock %}

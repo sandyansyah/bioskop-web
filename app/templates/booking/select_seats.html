@@ -1,0 +1,428 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Pilih Kursi</h5>
+            </div>
+            <div class="card-body">
+                <!-- Movie and Schedule Info -->
+                <div class="movie-info mb-4">
+                    <div class="d-flex">
+                        {% if schedule.movie.poster_image %}
+                        <div class="me-3">
+                            <img src="{{ url_for('static', filename='uploads/' + schedule.movie.poster_image) }}" alt="{{ schedule.movie.title }}" class="movie-thumbnail">
+                        </div>
+                        {% endif %}
+                        <div>
+                            <h4 class="mb-1">{{ schedule.movie.title }}</h4>
+                            <div class="text-muted mb-2">
+                                {{ schedule.formatted_date }} | {{ schedule.formatted_time }}
+                            </div>
+                            <div class="mb-2">
+                                <span class="badge bg-info">{{ schedule.room.theater.name }} - {{ schedule.room.name }}</span>
+                                {% if schedule.room.room_type %}
+                                <span class="badge bg-secondary">{{ schedule.room.room_type }}</span>
+                                {% endif %}
+                                <span class="badge bg-primary">{{ schedule.movie.duration }} min</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Screen -->
+                <div class="screen-container mb-5">
+                    <div class="screen">LAYAR</div>
+                    <div class="screen-shadow"></div>
+                </div>
+                
+                <!-- Seat Map -->
+                <div class="seat-map-container">
+                    <div class="seat-map">
+                        {% for row in sorted_rows %}
+                        <div class="seat-row">
+                            <div class="row-label">{{ row }}</div>
+                            <div class="seats">
+                                {% for seat in seats_by_row[row] %}
+                                <div class="seat-wrapper">
+                                    <div class="seat {% if seat.id in booked_seats %}booked{% endif %}" 
+                                         data-seat-id="{{ seat.id }}" 
+                                         data-seat-label="{{ seat.seat_label }}"
+                                         data-price="{{ base_price }}">
+                                        <span class="seat-number">{{ seat.number }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Seat Legend -->
+                <div class="seat-legend mt-4">
+                    <div class="d-flex justify-content-center">
+                        <div class="legend-item">
+                            <div class="legend-seat available"></div>
+                            <div>Tersedia</div>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-seat selected"></div>
+                            <div>Dipilih</div>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-seat booked"></div>
+                            <div>Sudah Dipesan</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card mb-4 sticky-top" style="top: 20px; z-index: 999;">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Ringkasan Pemesanan</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h5>{{ schedule.movie.title }}</h5>
+                    <div class="text-muted">
+                        {{ schedule.formatted_date }} | {{ schedule.formatted_time }}
+                    </div>
+                    <div class="mt-2">
+                        <span class="badge bg-info">{{ schedule.room.theater.name }} - {{ schedule.room.name }}</span>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div id="selected-seats-container" class="mb-3">
+                    <h6>Kursi Dipilih:</h6>
+                    <div id="selected-seats" class="selected-seats-list">
+                        <div class="no-seats-selected">Belum ada kursi dipilih</div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Harga per kursi:</span>
+                        <span>Rp {{ "%.0f"|format(base_price) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>Jumlah kursi:</span>
+                        <span id="seat-count">0</span>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Total:</h5>
+                    <h5 class="mb-0" id="total-price">Rp 0</h5>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button id="continue-btn" class="btn btn-primary" disabled>
+                        Lanjutkan ke Pembayaran
+                    </button>
+                    <a href="{{ url_for('movies.detail', movie_id=schedule.movie_id) }}" class="btn btn-outline-secondary">
+                        Kembali
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .movie-thumbnail {
+        width: 80px;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 4px;
+    }
+    
+    .screen-container {
+        perspective: 500px;
+        margin-bottom: 20px;
+    }
+    
+    .screen {
+        background: #fff;
+        height: 40px;
+        width: 100%;
+        transform: rotateX(-30deg);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #aaa;
+        font-size: 20px;
+        letter-spacing: 2px;
+    }
+    
+    .screen-shadow {
+        height: 15px;
+        background: #00000017;
+        margin: 0 auto;
+        width: 90%;
+        border-radius: 50%;
+    }
+    
+    .seat-map-container {
+        display: flex;
+        justify-content: center;
+        overflow-x: auto;
+        padding: 20px 0;
+    }
+    
+    .seat-map {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .seat-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .row-label {
+        width: 30px;
+        text-align: center;
+        font-weight: bold;
+    }
+    
+    .seats {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .seat-wrapper {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .seat {
+        width: 35px;
+        height: 35px;
+        background: #444;
+        border-radius: 5px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        color: white;
+        transition: all 0.2s;
+        position: relative;
+    }
+    
+    .seat:hover:not(.booked) {
+        background: #666;
+        transform: scale(1.05);
+    }
+    
+    .seat.selected {
+        background: #007bff;
+    }
+    
+    .seat.booked {
+        background: #e74c3c;
+        cursor: not-allowed;
+    }
+    
+    .seat-number {
+        font-size: 12px;
+    }
+    
+    .seat-legend {
+        display: flex;
+        justify-content: center;
+    }
+    
+    .legend-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 0 15px;
+    }
+    
+    .legend-seat {
+        width: 25px;
+        height: 25px;
+        border-radius: 5px;
+        margin-bottom: 5px;
+    }
+    
+    .legend-seat.available {
+        background: #444;
+    }
+    
+    .legend-seat.selected {
+        background: #007bff;
+    }
+    
+    .legend-seat.booked {
+        background: #e74c3c;
+    }
+    
+    .selected-seats-list {
+        min-height: 60px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    .selected-seat-item {
+        background: #f8f9fa;
+        border-radius: 4px;
+        padding: 5px 10px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+    }
+    
+    .remove-seat {
+        color: #dc3545;
+        margin-left: 5px;
+        cursor: pointer;
+    }
+    
+    .no-seats-selected {
+        color: #6c757d;
+        font-style: italic;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const seats = document.querySelectorAll('.seat:not(.booked)');
+        const selectedSeatsContainer = document.getElementById('selected-seats');
+        const seatCountElement = document.getElementById('seat-count');
+        const totalPriceElement = document.getElementById('total-price');
+        const continueBtn = document.getElementById('continue-btn');
+        
+        let selectedSeats = [];
+        
+        // Handle seat selection
+        seats.forEach(seat => {
+            seat.addEventListener('click', function() {
+                const seatId = this.getAttribute('data-seat-id');
+                const seatLabel = this.getAttribute('data-seat-label');
+                const price = parseFloat(this.getAttribute('data-price'));
+                
+                if (this.classList.contains('selected')) {
+                    // Deselect seat
+                    this.classList.remove('selected');
+                    selectedSeats = selectedSeats.filter(s => s.id !== seatId);
+                } else {
+                    // Select seat
+                    this.classList.add('selected');
+                    selectedSeats.push({
+                        id: seatId,
+                        label: seatLabel,
+                        price: price
+                    });
+                }
+                
+                updateSummary();
+            });
+        });
+        
+        // Update booking summary
+        function updateSummary() {
+            // Update selected seats display
+            if (selectedSeats.length === 0) {
+                selectedSeatsContainer.innerHTML = '<div class="no-seats-selected">Belum ada kursi dipilih</div>';
+            } else {
+                let seatsHTML = '';
+                selectedSeats.forEach(seat => {
+                    seatsHTML += `
+                        <div class="selected-seat-item">
+                            ${seat.label}
+                            <span class="remove-seat" data-seat-id="${seat.id}">
+                                <i class="fas fa-times"></i>
+                            </span>
+                        </div>
+                    `;
+                });
+                selectedSeatsContainer.innerHTML = seatsHTML;
+                
+                // Add event listeners for remove buttons
+                document.querySelectorAll('.remove-seat').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const seatId = this.getAttribute('data-seat-id');
+                        // Deselect in UI
+                        const seatElement = document.querySelector(`.seat[data-seat-id="${seatId}"]`);
+                        if (seatElement) {
+                            seatElement.classList.remove('selected');
+                        }
+                        // Remove from array
+                        selectedSeats = selectedSeats.filter(s => s.id !== seatId);
+                        updateSummary();
+                    });
+                });
+            }
+            
+            // Update count and price
+            seatCountElement.textContent = selectedSeats.length;
+            
+            const totalPrice = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
+            totalPriceElement.textContent = `Rp ${totalPrice.toFixed(0)}`;
+            
+            // Enable/disable continue button
+            continueBtn.disabled = selectedSeats.length === 0;
+        }
+        
+        // Handle continue button
+        continueBtn.addEventListener('click', function() {
+            if (selectedSeats.length === 0) {
+                return;
+            }
+            
+            // Prepare data for submission
+            const data = {
+                scheduleId: '{{ schedule.id }}',
+                selectedSeats: selectedSeats.map(seat => seat.id)
+            };
+            
+            // Send data to server
+            fetch('{{ url_for("booking.process_seats") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = data.redirectUrl;
+                } else {
+                    alert(data.message || 'Terjadi kesalahan. Silakan coba lagi.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan saat memproses pesanan. Silakan coba lagi.');
+            });
+        });
+    });
+</script>
+{% endblock %}

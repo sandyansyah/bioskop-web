@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if title %}{{ title }} - {% endif %}Admin CinemaTicket</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <nav id="sidebar">
+            <div class="sidebar-header">
+                <h3>CinemaTicket</h3>
+                <p>Panel Admin</p>
+            </div>
+
+            <ul class="list-unstyled components">
+                <li class="{{ 'active' if request.endpoint == 'admin.index' else '' }}">
+                    <a href="{{ url_for('admin.index') }}">
+                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    </a>
+                </li>
+                <li class="{{ 'active' if 'admin.movies' in request.endpoint else '' }}">
+                    <a href="{{ url_for('admin.movies') }}">
+                        <i class="fas fa-film me-2"></i>Film
+                    </a>
+                </li>
+                <li class="{{ 'active' if 'admin.theaters' in request.endpoint else '' }}">
+                    <a href="{{ url_for('admin.theaters') }}">
+                        <i class="fas fa-building me-2"></i>Bioskop
+                    </a>
+                </li>
+                <li class="{{ 'active' if 'admin.rooms' in request.endpoint else '' }}">
+                    <a href="{{ url_for('admin.rooms') }}">
+                        <i class="fas fa-door-open me-2"></i>Studio
+                    </a>
+                </li>
+                <li class="{{ 'active' if 'admin.schedules' in request.endpoint else '' }}">
+                    <a href="{{ url_for('admin.schedules') }}">
+                        <i class="fas fa-calendar-alt me-2"></i>Jadwal
+                    </a>
+                </li>
+                <li class="{{ 'active' if 'admin.bookings' in request.endpoint else '' }}">
+                    <a href="{{ url_for('admin.bookings') }}">
+                        <i class="fas fa-ticket-alt me-2"></i>Pemesanan
+                    </a>
+                </li>
+                <li class="{{ 'active' if 'admin.users' in request.endpoint else '' }}">
+                    <a href="{{ url_for('admin.users') }}">
+                        <i class="fas fa-users me-2"></i>Pengguna
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('main.index') }}">
+                        <i class="fas fa-arrow-left me-2"></i>Kembali ke Situs
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Page Content -->
+        <div id="content">
+            <!-- Navbar -->
+            <nav class="navbar navbar-expand-lg navbar-light bg-light">
+                <div class="container-fluid">
+                    <button type="button" id="sidebarCollapse" class="btn btn-primary">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    
+                    <div class="ms-auto">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user me-1"></i>{{ current_user.username }}
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                                        <i class="fas fa-sign-out-alt me-1"></i>Logout
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Flash Messages -->
+            <div class="container-fluid mb-4">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            <!-- Main Content -->
+            <div class="container-fluid">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    
+    <script>
+        $(document).ready(function () {
+            $('#sidebarCollapse').on('click', function () {
+                $('#sidebar').toggleClass('active');
+            });
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

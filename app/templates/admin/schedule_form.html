@@ -1,0 +1,119 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2">{{ title }}</h1>
+    <a href="{{ url_for('admin.schedules') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Kembali
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        {{ form.movie_id.label(class="form-label") }}
+                        {% if form.movie_id.errors %}
+                            {{ form.movie_id(class="form-select is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.movie_id.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.movie_id(class="form-select") }}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.room_id.label(class="form-label") }}
+                        {% if form.room_id.errors %}
+                            {{ form.room_id(class="form-select is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.room_id.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.room_id(class="form-select") }}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        {{ form.start_time.label(class="form-label") }}
+                        {% if form.start_time.errors %}
+                            {{ form.start_time(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.start_time.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.start_time(class="form-control", placeholder="YYYY-MM-DD HH:MM") }}
+                            <div class="form-text">Format: YYYY-MM-DD HH:MM (contoh: 2025-06-30 19:00)</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.price.label(class="form-label") }}
+                        {% if form.price.errors %}
+                            {{ form.price(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.price.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.price(class="form-control") }}
+                            <div class="form-text">Harga dalam Rupiah (tanpa titik/koma)</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-check mb-3">
+                {{ form.is_active(class="form-check-input") }}
+                {{ form.is_active.label(class="form-check-label") }}
+            </div>
+            
+            <div class="alert alert-info mb-3">
+                <i class="fas fa-info-circle me-2"></i>
+                Pastikan tidak ada jadwal yang bertabrakan di studio yang sama. Cek jadwal yang sudah ada sebelum menambahkan jadwal baru.
+            </div>
+            
+            <div class="d-flex justify-content-end">
+                <a href="{{ url_for('admin.schedules') }}" class="btn btn-secondary me-2">Batal</a>
+                {{ form.submit(class="btn btn-primary") }}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Format tanggal dan waktu
+        const startTimeInput = document.getElementById('start_time');
+        
+        // Format saat form disubmit
+        document.querySelector('form').addEventListener('submit', function(e) {
+            // Validasi format waktu
+            const startTimeValue = startTimeInput.value;
+            const dateTimePattern = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
+            
+            if (!dateTimePattern.test(startTimeValue)) {
+                e.preventDefault();
+                alert('Format waktu tidak valid. Gunakan format: YYYY-MM-DD HH:MM');
+                startTimeInput.classList.add('is-invalid');
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <!-- Sidebar / Filters -->
+    <div class="col-lg-3">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Filter Film</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('movies.list') }}" method="GET" id="filter-form">
+                    <!-- Search -->
+                    <div class="mb-3">
+                        <label for="search" class="form-label">Cari Film</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="search" name="search" 
+                                  value="{{ search_query or '' }}" placeholder="Judul, sutradara, dll">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Genre Filter -->
+                    <div class="mb-3">
+                        <label class="form-label">Genre</label>
+                        <div class="genre-list">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="genre" id="genre-all" value="" 
+                                      {% if not current_genre %}checked{% endif %}>
+                                <label class="form-check-label" for="genre-all">
+                                    Semua Genre
+                                </label>
+                            </div>
+                            {% for genre in genres %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="genre" id="genre-{{ genre.id }}" 
+                                      value="{{ genre.id }}" {% if current_genre == genre.id %}checked{% endif %}>
+                                <label class="form-check-label" for="genre-{{ genre.id }}">
+                                    {{ genre.name }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Reset Button -->
+                    <div class="d-grid">
+                        <a href="{{ url_for('movies.list') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-redo me-1"></i>Reset Filter
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Movie Grid -->
+    <div class="col-lg-9">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-0">Film Sedang Tayang</h2>
+            <div class="text-muted">
+                Menampilkan {{ movies.total }} film
+            </div>
+        </div>
+        
+        {% if search_query %}
+        <div class="alert alert-info mb-4">
+            <i class="fas fa-search me-2"></i>Hasil pencarian untuk: <strong>{{ search_query }}</strong>
+            <a href="{{ url_for('movies.list') }}" class="float-end text-decoration-none">
+                <i class="fas fa-times"></i>
+            </a>
+        </div>
+        {% endif %}
+        
+        <!-- Movie Grid -->
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for movie in movies.items %}
+            <div class="col animate-on-scroll" data-animation="slide-up">
+                <div class="card movie-card h-100">
+                    {% if movie.poster_image %}
+                    <img src="{{ url_for('static', filename='uploads/' + movie.poster_image) }}" class="card-img-top" alt="{{ movie.title }}">
+                    {% else %}
+                    <div class="card-img-top placeholder-poster d-flex align-items-center justify-content-center bg-light">
+                        <i class="fas fa-film fa-3x text-secondary"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ movie.title }}</h5>
+                        <div class="mb-2">
+                            <span class="badge bg-primary">{{ movie.duration }} min</span>
+                            {% if movie.rating %}
+                            <span class="badge bg-warning text-dark">{{ movie.rating }}</span>
+                            {% endif %}
+                        </div>
+                        <p class="card-text small text-muted">{{ movie.get_genres_str() }}</p>
+                        {% if movie.release_date %}
+                        <p class="card-text"><small class="text-muted">Rilis: {{ movie.release_date.strftime('%d %b %Y') }}</small></p>
+                        {% endif %}
+                        <a href="{{ url_for('movies.detail', movie_id=movie.id) }}" class="btn btn-primary mt-2">Lihat Detail</a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>Tidak ada film yang ditemukan.
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if movies.pages > 1 %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if movies.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('movies.list', page=movies.prev_num, search=search_query, genre=current_genre) }}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="fas fa-chevron-left"></i></span>
+                </li>
+                {% endif %}
+                
+                {% for page_num in movies.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                        {% if page_num == movies.page %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('movies.list', page=page_num, search=search_query, genre=current_genre) }}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if movies.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('movies.list', page=movies.next_num, search=search_query, genre=current_genre) }}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="fas fa-chevron-right"></i></span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .placeholder-poster {
+        height: 300px;
+    }
+    
+    .genre-list {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    
+    .movie-card {
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    
+    .movie-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .movie-card .card-img-top {
+        height: 300px;
+        object-fit: cover;
+        transition: transform 0.5s;
+    }
+    
+    .movie-card:hover .card-img-top {
+        transform: scale(1.05);
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-submit form when genre filter changes
+        const genreRadios = document.querySelectorAll('input[name="genre"]');
+        genreRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                document.getElementById('filter-form').submit();
+            });
+        });
+    });
+</script>
+{% endblock %}

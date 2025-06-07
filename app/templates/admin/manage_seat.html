@@ -1,0 +1,472 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2">Kelola Kursi - {{ room.theater.name }} ({{ room.name }})</h1>
+    <div>
+        <a href="{{ url_for('admin.rooms') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Kembali
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Peta Kursi</h5>
+            </div>
+            <div class="card-body">
+                {% if sorted_rows %}
+                    <!-- Screen -->
+                    <div class="screen-container mb-5">
+                        <div class="screen">LAYAR</div>
+                        <div class="screen-shadow"></div>
+                    </div>
+                    
+                    <!-- Seat Map -->
+                    <div class="seat-map-container">
+                        <div class="seat-map">
+                            {% for row in sorted_rows %}
+                            <div class="seat-row">
+                                <div class="row-label">{{ row }}</div>
+                                <div class="seats">
+                                    {% for seat in seats_by_row[row] %}
+                                    <div class="seat-wrapper">
+                                        <div class="seat {% if not seat.is_active %}disabled{% endif %}" 
+                                             data-seat-id="{{ seat.id }}" 
+                                             data-seat-label="{{ seat.seat_label }}"
+                                             data-is-active="{{ seat.is_active|int }}"
+                                             title="{{ seat.seat_label }} ({{ 'Aktif' if seat.is_active else 'Tidak Aktif' }})">
+                                            <span class="seat-number">{{ seat.number }}</span>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Seat Legend -->
+                    <div class="seat-legend mt-4">
+                        <div class="d-flex justify-content-center">
+                            <div class="legend-item">
+                                <div class="legend-seat"></div>
+                                <div>Aktif</div>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-seat disabled"></div>
+                                <div>Tidak Aktif</div>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>Belum ada kursi yang dibuat untuk studio ini. Silakan gunakan generator kursi di panel sebelah kanan.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Generator Kursi</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('admin.generate_seats', room_id=room.id) }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Perhatian!</strong> Membuat kursi baru akan menghapus semua kursi yang sudah ada di studio ini.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="rows" class="form-label">Jumlah Baris</label>
+                        <input type="number" class="form-control" id="rows" name="rows" min="1" max="26" value="10" required>
+                        <div class="form-text">Maksimal 26 baris (A-Z)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="seats_per_row" class="form-label">Jumlah Kursi per Baris</label>
+                        <input type="number" class="form-control" id="seats_per_row" name="seats_per_row" min="1" value="15" required>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary" onclick="return confirm('Anda yakin ingin membuat kursi baru? Semua kursi yang sudah ada akan dihapus.')">
+                            <i class="fas fa-magic me-1"></i>Buat Kursi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Pengaturan Kursi</h5>
+            </div>
+            <div class="card-body">
+                <div class="seat-actions mb-3">
+                    <button id="enableAllBtn" class="btn btn-success w-100 mb-2">
+                        <i class="fas fa-check me-1"></i>Aktifkan Semua Kursi
+                    </button>
+                    <button id="disableSelectedBtn" class="btn btn-warning w-100 mb-2" disabled>
+                        <i class="fas fa-times me-1"></i>Nonaktifkan Kursi Terpilih
+                    </button>
+                    <button id="enableSelectedBtn" class="btn btn-info w-100 mb-2" disabled>
+                        <i class="fas fa-check me-1"></i>Aktifkan Kursi Terpilih
+                    </button>
+                    <button id="toggleSelectionBtn" class="btn btn-secondary w-100">
+                        <i class="fas fa-exchange-alt me-1"></i>Pilih Semua/Batal Pilih
+                    </button>
+                </div>
+                
+                <hr>
+                
+                <div class="selected-seats-info">
+                    <h6>Kursi Terpilih: <span id="selectedCount">0</span></h6>
+                    <div id="selectedSeats" class="selected-seats-list">
+                        <div class="no-seats-selected">Belum ada kursi dipilih</div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="d-grid">
+                    <button id="saveChangesBtn" class="btn btn-primary" disabled>
+                        <i class="fas fa-save me-1"></i>Simpan Perubahan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .screen-container {
+        perspective: 500px;
+        margin-bottom: 20px;
+    }
+    
+    .screen {
+        background: #fff;
+        height: 40px;
+        width: 100%;
+        transform: rotateX(-30deg);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #aaa;
+        font-size: 20px;
+        letter-spacing: 2px;
+    }
+    
+    .screen-shadow {
+        height: 15px;
+        background: #00000017;
+        margin: 0 auto;
+        width: 90%;
+        border-radius: 50%;
+    }
+    
+    .seat-map-container {
+        display: flex;
+        justify-content: center;
+        overflow-x: auto;
+        padding: 20px 0;
+    }
+    
+    .seat-map {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .seat-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .row-label {
+        width: 30px;
+        text-align: center;
+        font-weight: bold;
+    }
+    
+    .seats {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .seat-wrapper {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .seat {
+        width: 35px;
+        height: 35px;
+        background: #444;
+        border-radius: 5px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        color: white;
+        transition: all 0.2s;
+        position: relative;
+    }
+    
+    .seat:hover:not(.disabled) {
+        background: #666;
+        transform: scale(1.05);
+    }
+    
+    .seat.disabled {
+        background: #e74c3c;
+    }
+    
+    .seat.selected {
+        background: #007bff;
+        box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+    }
+    
+    .seat-number {
+        font-size: 12px;
+    }
+    
+    .seat-legend {
+        display: flex;
+        justify-content: center;
+    }
+    
+    .legend-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 0 15px;
+    }
+    
+    .legend-seat {
+        width: 25px;
+        height: 25px;
+        border-radius: 5px;
+        margin-bottom: 5px;
+        background: #444;
+    }
+    
+    .legend-seat.disabled {
+        background: #e74c3c;
+    }
+    
+    .selected-seats-list {
+        min-height: 60px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 10px;
+    }
+    
+    .selected-seat-item {
+        background: #f8f9fa;
+        border-radius: 4px;
+        padding: 3px 8px;
+        font-weight: bold;
+        font-size: 0.8rem;
+    }
+    
+    .no-seats-selected {
+        color: #6c757d;
+        font-style: italic;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const seats = document.querySelectorAll('.seat');
+        const selectedSeatsContainer = document.getElementById('selectedSeats');
+        const selectedCountElement = document.getElementById('selectedCount');
+        const disableSelectedBtn = document.getElementById('disableSelectedBtn');
+        const enableSelectedBtn = document.getElementById('enableSelectedBtn');
+        const enableAllBtn = document.getElementById('enableAllBtn');
+        const toggleSelectionBtn = document.getElementById('toggleSelectionBtn');
+        const saveChangesBtn = document.getElementById('saveChangesBtn');
+        
+        let selectedSeats = [];
+        let seatChanges = {};
+        
+        // Handle seat selection
+        seats.forEach(seat => {
+            seat.addEventListener('click', function() {
+                const seatId = this.getAttribute('data-seat-id');
+                const seatLabel = this.getAttribute('data-seat-label');
+                
+                if (this.classList.contains('selected')) {
+                    // Deselect seat
+                    this.classList.remove('selected');
+                    selectedSeats = selectedSeats.filter(s => s.id !== seatId);
+                } else {
+                    // Select seat
+                    this.classList.add('selected');
+                    selectedSeats.push({
+                        id: seatId,
+                        label: seatLabel,
+                        isActive: this.getAttribute('data-is-active') === '1'
+                    });
+                }
+                
+                updateSelectedSeatsUI();
+            });
+        });
+        
+        // Update selected seats UI
+        function updateSelectedSeatsUI() {
+            // Update count
+            selectedCountElement.textContent = selectedSeats.length;
+            
+            // Update buttons state
+            disableSelectedBtn.disabled = selectedSeats.length === 0;
+            enableSelectedBtn.disabled = selectedSeats.length === 0;
+            
+            // Update save button state
+            saveChangesBtn.disabled = Object.keys(seatChanges).length === 0;
+            
+            // Update selected seats display
+            if (selectedSeats.length === 0) {
+                selectedSeatsContainer.innerHTML = '<div class="no-seats-selected">Belum ada kursi dipilih</div>';
+            } else {
+                let seatsHTML = '';
+                selectedSeats.forEach(seat => {
+                    seatsHTML += `
+                        <div class="selected-seat-item">
+                            ${seat.label}
+                        </div>
+                    `;
+                });
+                selectedSeatsContainer.innerHTML = seatsHTML;
+            }
+        }
+        
+        // Enable all seats
+        enableAllBtn.addEventListener('click', function() {
+            seats.forEach(seat => {
+                const seatId = seat.getAttribute('data-seat-id');
+                if (seat.classList.contains('disabled')) {
+                    seat.classList.remove('disabled');
+                    seat.setAttribute('data-is-active', '1');
+                    seatChanges[seatId] = true; // true means active
+                }
+            });
+            
+            updateSelectedSeatsUI();
+            saveChangesBtn.disabled = Object.keys(seatChanges).length === 0;
+        });
+        
+        // Disable selected seats
+        disableSelectedBtn.addEventListener('click', function() {
+            selectedSeats.forEach(seat => {
+                const seatElement = document.querySelector(`.seat[data-seat-id="${seat.id}"]`);
+                if (seatElement) {
+                    seatElement.classList.add('disabled');
+                    seatElement.classList.remove('selected');
+                    seatElement.setAttribute('data-is-active', '0');
+                    seatChanges[seat.id] = false; // false means inactive
+                }
+            });
+            
+            selectedSeats = [];
+            updateSelectedSeatsUI();
+            saveChangesBtn.disabled = Object.keys(seatChanges).length === 0;
+        });
+        
+        // Enable selected seats
+        enableSelectedBtn.addEventListener('click', function() {
+            selectedSeats.forEach(seat => {
+                const seatElement = document.querySelector(`.seat[data-seat-id="${seat.id}"]`);
+                if (seatElement) {
+                    seatElement.classList.remove('disabled');
+                    seatElement.classList.remove('selected');
+                    seatElement.setAttribute('data-is-active', '1');
+                    seatChanges[seat.id] = true; // true means active
+                }
+            });
+            
+            selectedSeats = [];
+            updateSelectedSeatsUI();
+            saveChangesBtn.disabled = Object.keys(seatChanges).length === 0;
+        });
+        
+        // Toggle selection
+        toggleSelectionBtn.addEventListener('click', function() {
+            if (selectedSeats.length === seats.length) {
+                // Deselect all
+                seats.forEach(seat => {
+                    seat.classList.remove('selected');
+                });
+                selectedSeats = [];
+            } else {
+                // Select all
+                selectedSeats = [];
+                seats.forEach(seat => {
+                    seat.classList.add('selected');
+                    const seatId = seat.getAttribute('data-seat-id');
+                    const seatLabel = seat.getAttribute('data-seat-label');
+                    const isActive = seat.getAttribute('data-is-active') === '1';
+                    
+                    selectedSeats.push({
+                        id: seatId,
+                        label: seatLabel,
+                        isActive: isActive
+                    });
+                });
+            }
+            
+            updateSelectedSeatsUI();
+        });
+        
+        // Save changes
+        saveChangesBtn.addEventListener('click', function() {
+            // Prepare data for submission
+            const data = {
+                seatChanges: seatChanges
+            };
+            
+            // Send data to server
+            fetch(`/admin/seats/update/${room.id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Perubahan berhasil disimpan!');
+                    location.reload();
+                } else {
+                    alert(data.message || 'Terjadi kesalahan. Silakan coba lagi.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan saat menyimpan perubahan. Silakan coba lagi.');
+            });
+        });
+    });
+</script>
+{% endblock %}

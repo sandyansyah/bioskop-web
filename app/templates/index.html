@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section mb-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 offset-lg-2 text-center">
+                <h1 class="display-4 fw-bold">Pesan Tiket Bioskop Favoritmu</h1>
+                <p class="lead">Dapatkan tiket film terbaru dengan cepat dan mudah. Pilih film, jadwal, dan kursi favorit Anda secara online.</p>
+                <div class="mt-4">
+                    <a href="{{ url_for('movies.list') }}" class="btn btn-primary btn-lg me-2">
+                        <i class="fas fa-ticket-alt me-2"></i>Pesan Sekarang
+                    </a>
+                    <a href="{{ url_for('movies.coming_soon') }}" class="btn btn-outline-secondary btn-lg">
+                        <i class="fas fa-calendar-alt me-2"></i>Film Akan Datang
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Now Showing Movies -->
+<section class="mb-5">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="section-title">Sedang Tayang</h2>
+            <a href="{{ url_for('movies.list') }}" class="btn btn-sm btn-outline-primary">Lihat Semua</a>
+        </div>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for movie in now_showing %}
+            <div class="col">
+                <div class="card movie-card h-100">
+                    {% if movie.poster_image %}
+                    <img src="{{ url_for('static', filename='uploads/' + movie.poster_image) }}" class="card-img-top" alt="{{ movie.title }}">
+                    {% else %}
+                    <div class="card-img-top placeholder-poster d-flex align-items-center justify-content-center bg-light">
+                        <i class="fas fa-film fa-3x text-secondary"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ movie.title }}</h5>
+                        <div class="mb-2">
+                            <span class="badge bg-primary">{{ movie.duration }} min</span>
+                            {% if movie.rating %}
+                            <span class="badge bg-warning text-dark">{{ movie.rating }}</span>
+                            {% endif %}
+                        </div>
+                        <p class="card-text small text-muted">{{ movie.get_genres_str() }}</p>
+                        <a href="{{ url_for('movies.detail', movie_id=movie.id) }}" class="btn btn-sm btn-primary">Lihat Detail</a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-12">
+                <div class="alert alert-info">Tidak ada film yang sedang tayang saat ini.</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Upcoming Shows Section -->
+<section class="mb-5">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="section-title">Jadwal Mendatang</h2>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Film</th>
+                        <th>Bioskop</th>
+                        <th>Studio</th>
+                        <th>Tanggal</th>
+                        <th>Waktu</th>
+                        <th>Harga</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for schedule in upcoming_schedules %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('movies.detail', movie_id=schedule.movie.id) }}" class="text-decoration-none">
+                                {{ schedule.movie.title }}
+                            </a>
+                        </td>
+                        <td>{{ schedule.room.theater.name }}</td>
+                        <td>{{ schedule.room.name }}</td>
+                        <td>{{ schedule.formatted_date }}</td>
+                        <td>{{ schedule.formatted_time }}</td>
+                        <td>Rp {{ "%.0f"|format(schedule.price) }}</td>
+                        <td>
+                            <a href="{{ url_for('booking.select_seats', schedule_id=schedule.id) }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-ticket-alt me-1"></i>Pesan
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center">Tidak ada jadwal mendatang tersedia.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- Coming Soon Movies -->
+<section class="mb-5">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="section-title">Akan Datang</h2>
+            <a href="{{ url_for('movies.coming_soon') }}" class="btn btn-sm btn-outline-primary">Lihat Semua</a>
+        </div>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+            {% for movie in coming_soon %}
+            <div class="col">
+                <div class="card movie-card h-100">
+                    {% if movie.poster_image %}
+                    <img src="{{ url_for('static', filename='uploads/' + movie.poster_image) }}" class="card-img-top" alt="{{ movie.title }}">
+                    {% else %}
+                    <div class="card-img-top placeholder-poster d-flex align-items-center justify-content-center bg-light">
+                        <i class="fas fa-film fa-3x text-secondary"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ movie.title }}</h5>
+                        {% if movie.release_date %}
+                        <p class="card-text"><small class="text-muted">Rilis: {{ movie.release_date.strftime('%d %b %Y') }}</small></p>
+                        {% endif %}
+                        <a href="{{ url_for('movies.detail', movie_id=movie.id) }}" class="btn btn-sm btn-outline-primary">Detail</a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-12">
+                <div class="alert alert-info">Tidak ada film yang akan datang saat ini.</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .hero-section {
+        padding: 5rem 0;
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+        margin-top: 1rem;
+    }
+    
+    .movie-card {
+        transition: transform 0.3s;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .movie-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .card-img-top {
+        height: 300px;
+        object-fit: cover;
+    }
+    
+    .placeholder-poster {
+        height: 300px;
+    }
+    
+    .section-title {
+        position: relative;
+        padding-bottom: 0.5rem;
+    }
+    
+    .section-title::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 50px;
+        height: 3px;
+        background-color: #007bff;
+    }
+</style>
+{% endblock %}
