@@ -1,5 +1,5 @@
 Flask==2.3.3
-Flask-SQLAlchemy==3.1.1
+Flask-SQLAlchemy==2.5.1
 Flask-Migrate==4.0.5
 Flask-Login==0.6.3
 Flask-WTF==1.2.1
@@ -8,7 +8,7 @@ email-validator==2.1.0
 Pillow>=10.1.0
 python-dotenv==1.0.0
 WTForms==3.1.1
-SQLAlchemy==2.0.23
+SQLAlchemy==1.4.49
 Werkzeug==3.0.1
 alembic==1.12.1
 Jinja2==3.1.2
